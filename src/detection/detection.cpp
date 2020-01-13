@@ -11,7 +11,7 @@ ObjectDetection::~ObjectDetection() {
 
 }
 
-void ObjectDetection::detection(std::vector<uint8_t>& vec)
+std::unordered_map<std::string,int> ObjectDetection::detection(std::vector<uint8_t>& vec)
 {
     float scale = 1.0/255.0;
     Scalar mean;
@@ -41,21 +41,23 @@ void ObjectDetection::detection(std::vector<uint8_t>& vec)
     Mat blob;
     Mat data_mat(vec,true);
     Mat frame(cv::imdecode(data_mat,1)); //put 0 if you want greyscale
-    std::clog <<"Height: " << frame.rows <<" Width: "<<frame.cols<<std::endl;
+    
+    std::unordered_map<std::string,int> results;
 
-    if (frame.empty()) {
-        std::cout << 0.0 << "\t" << 0 << "\t"<< 0 << "\t" << 0 << "\t" << 0 << "\t" << "noimage" << std::endl;
-
-    } else { 
+    if (!frame.empty()) {
+        
         preprocess(frame, net, Size(inpWidth, inpHeight), scale, mean, swapRB);
 
         std::vector<Mat> outs;
         net.forward(outs, outNames);
 
-        postprocess(frame, outs, net);
+        auto objects = postprocess(frame, outs, net);
+
+        results = updateFrame(frame, objects);
+
         imencode(".jpg", frame, vec);
-        //imwrite(saved_file, frame);
     }
+    return results;
 }
 
 void ObjectDetection::preprocess(const Mat& frame, Net& net, Size inpSize, float scale,
@@ -71,15 +73,14 @@ void ObjectDetection::preprocess(const Mat& frame, Net& net, Size inpSize, float
     net.setInput(blob, "", scale, mean);    
 }
 
-void ObjectDetection::postprocess(Mat& frame, const std::vector<Mat>& outs, Net& net)
+std::vector<ObjectDetection::object> ObjectDetection::postprocess(const Mat& frame, const std::vector<Mat>& outs, Net& net)
 {
- 
-    const float confThreshold = 0.5;
-    const float nmsThreshold = 0.4;
     static std::vector<int> outLayers = net.getUnconnectedOutLayers();
     static std::string outLayerType = net.getLayer(outLayers[0])->type;
 
     std::vector<String> outNames = net.getUnconnectedOutLayersNames();
+
+	std::vector<ObjectDetection::object>Objects;
 
     std::vector<int> classIds;
     std::vector<float> confidences;
@@ -113,6 +114,13 @@ void ObjectDetection::postprocess(Mat& frame, const std::vector<Mat>& outs, Net&
                         width  = right - left + 1;
                         height = bottom - top + 1;
                     }
+
+                    ObjectDetection::object o;
+                    o.classId = (int)(data[i + 1]) - 1;
+                    o.box = Rect(left, top, width, height);
+                    o.confidence = confidence;
+                    Objects.push_back(o);
+
                     classIds.push_back((int)(data[i + 1]) - 1);  // Skip 0th background class id.
                     boxes.push_back(Rect(left, top, width, height));
                     confidences.push_back(confidence);
@@ -145,10 +153,16 @@ void ObjectDetection::postprocess(Mat& frame, const std::vector<Mat>& outs, Net&
                     int left = centerX - width / 2;
                     int top = centerY - height / 2;
 
+                    ObjectDetection::object o;
+                    o.classId = classIdPoint.x;
+                    o.box = Rect(left, top, width, height);
+                    o.confidence = confidence;
+                    Objects.push_back(o);
+
                     classIds.push_back(classIdPoint.x);  // Skip 0th background class id.
                     boxes.push_back(Rect(left, top, width, height));
                     confidences.push_back(confidence);
-                    std::cout << confidence << "\t" << centerX << "\t"<< centerY << "\t" << width << "\t" << height << "\t" << classes[classIdPoint.x] << std::endl;
+                    //std::cout << confidence << "\t" << centerX << "\t"<< centerY << "\t" << width << "\t" << height << "\t" << classes[classIdPoint.x] << std::endl;
                 }
             }
         }
@@ -156,15 +170,36 @@ void ObjectDetection::postprocess(Mat& frame, const std::vector<Mat>& outs, Net&
         CV_Error(Error::StsNotImplemented, "Unknown output layer type: " + outLayerType);
     }
 
+    return Objects;
+}
+
+std::unordered_map<std::string,int> ObjectDetection::updateFrame(Mat& frame, std::vector<ObjectDetection::object> objects) 
+{
+    
+    std::unordered_map<std::string, int> results;
+    
+    std::vector<int> classIds;
+    std::vector<float> confidences;
+    std::vector<Rect> boxes;
+
+    for (const auto& object : objects)
+    {  
+        classIds.push_back(object.classId);  // Skip 0th background class id.
+        boxes.push_back(object.box);
+        confidences.push_back(object.confidence);
+    }
+    
     std::vector<int> indices;
     NMSBoxes(boxes, confidences, confThreshold, nmsThreshold, indices);
     for (size_t i = 0; i < indices.size(); ++i)
     {
         int idx = indices[i];
+        results[classes[classIds[idx]]]++;
         Rect box = boxes[idx];
         drawPred(classIds[idx], confidences[idx], box.x, box.y,
-                 box.x + box.width, box.y + box.height, frame);
-    }
+                box.x + box.width, box.y + box.height, frame);
+    }  
+    return results;
 }
 
 void ObjectDetection::drawPred(int classId, float conf, int left, int top, int right, int bottom, Mat& frame)

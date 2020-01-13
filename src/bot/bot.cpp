@@ -56,14 +56,20 @@ void Bot::SetUpMessages() {
             std::vector<uint8_t> vec(imgStr.begin(), imgStr.end());
         
             ObjectDetection yolo;
-            yolo.detection(vec);
-        
+            auto result = yolo.detection(vec);
+
+            std::string caption = "Image contains:\n";
+
+            for (auto &e: result) {
+		        caption += e.first + " " + std::to_string(e.second) + "\n";
+	        }
+
             auto image(std::make_shared<TgBot::InputFile>());
             std::string tmp(vec.begin(), vec.end()); 
             image->data = tmp;
             image->mimeType = "image/jpeg";
             image->fileName = "Hello.jpg";
-            bot->getApi().sendPhoto(message->chat->id, image);
+            bot->getApi().sendPhoto(message->chat->id, image, caption);
         } else { 
             bot->getApi().sendMessage(message->chat->id, "Your message is: " + message->text);
         }

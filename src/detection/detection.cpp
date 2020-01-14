@@ -175,8 +175,13 @@ std::vector<ObjectDetection::object> ObjectDetection::postprocess(const Mat& fra
 
 std::unordered_map<std::string,int> ObjectDetection::updateFrame(Mat& frame, std::vector<ObjectDetection::object> objects) 
 {
-    
+    static auto val = time(0);   
+    srand((unsigned) val);
+    const int min = 128;
+    const int max = 255;
+
     std::unordered_map<std::string, int> results;
+    std::unordered_map<std::string, Scalar> classColor;
     
     std::vector<int> classIds;
     std::vector<float> confidences;
@@ -195,17 +200,25 @@ std::unordered_map<std::string,int> ObjectDetection::updateFrame(Mat& frame, std
     {
         int idx = indices[i];
         results[classes[classIds[idx]]]++;
+        auto it = classColor.find(classes[classIds[idx]]);
+        if (it == classColor.end()) 
+        {
+            int R = min + (rand() % (max-min));
+            int G = min + (rand() % (max-min));
+            int B = min + (rand() % (max-min));
+            
+            classColor[classes[classIds[idx]]] = Scalar(R, G, B);
+        }
         Rect box = boxes[idx];
-        drawPred(classIds[idx], confidences[idx], box.x, box.y,
+
+        drawPred(classIds[idx],classColor[classes[classIds[idx]]], confidences[idx], box.x, box.y,
                 box.x + box.width, box.y + box.height, frame);
     }  
     return results;
 }
 
-void ObjectDetection::drawPred(int classId, float conf, int left, int top, int right, int bottom, Mat& frame)
+void ObjectDetection::drawPred(int classId, Scalar classColor, float conf, int left, int top, int right, int bottom, Mat& frame)
 {
-    rectangle(frame, Point(left, top), Point(right, bottom), Scalar(0, 255, 0));
-    
     std::string label = format("%.2f", conf);
     if (!classes.empty())
     {
@@ -213,9 +226,11 @@ void ObjectDetection::drawPred(int classId, float conf, int left, int top, int r
         label = classes[classId] + ": " + label;
     }
     int baseLine;
+    
     Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
     top = max(top, labelSize.height);
+    rectangle(frame, Point(left, top), Point(right, bottom), classColor, 2);
     rectangle(frame, Point(left, top - labelSize.height),
-              Point(left + labelSize.width, top + baseLine), Scalar(0, 255, 0), FILLED);
+              Point(left + labelSize.width, top + baseLine), classColor, FILLED);
     putText(frame, label, Point(left, top), FONT_HERSHEY_SIMPLEX, 0.5, Scalar());
 }

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <unordered_map>
+#include <ctime>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/dnn.hpp>
@@ -33,7 +34,7 @@ class ObjectDetection {
 		std::vector<object> postprocess(const cv::Mat& frame, const std::vector<cv::Mat>& outs, cv::dnn::Net& net);
         void preprocess(const cv::Mat& frame, cv::dnn::Net& net, cv::Size inpSize, float scale, const cv::Scalar& mean, bool swapRB);
 		std::unordered_map<std::string,int> updateFrame(cv::Mat& frame, const std::vector<object> objects);
-		void drawPred(int classId, float conf, int left, int top, int right, int bottom, cv::Mat& frame);
+		void drawPred(int classId, cv::Scalar classColor, float conf, int left, int top, int right, int bottom, cv::Mat& frame);
 
         std::vector<std::string> classes;                       
 };

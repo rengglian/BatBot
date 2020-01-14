@@ -3,13 +3,14 @@
 #include <time.h>
 #include <tgbot/tgbot.h>
 
+#include "../config/config.hpp"
 #include "../detection/detection.hpp"
 
 class Bot {
 
 	public:
 
-		Bot();
+		Bot(std::string token);
 		~Bot();
 		
 		void Listen();

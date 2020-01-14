@@ -1,8 +1,8 @@
 #include "bot.hpp"
 
-Bot::Bot() {
+Bot::Bot(std::string token) {
     
-	bot = new TgBot::Bot("1055954257:AAGX3OdfgWVxMvdAeRwazLXlRgJjnipi4xY");
+	bot = new TgBot::Bot(token);
 }
 
 Bot::~Bot() {

@@ -9,20 +9,23 @@ set(Boost_USE_MULTITHREADED ON)
 find_package(Threads REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(Boost COMPONENTS system REQUIRED)
+find_package(nlohmann_json 3.2.0 REQUIRED)
 find_package(CURL)
 find_package(OpenCV REQUIRED)
 
 add_executable(${TARGET_NAME}   src/main.cpp 
+                                src/config/config.cpp
                                 src/bot/bot.cpp
                                 src/detection/detection.cpp)
 
-target_include_directories(${TARGET_NAME} PRIVATE ${OPENSSL_INCLUDE_DIR} ${Boost_INCLUDE_DIR} ${OpenCV_INCLUDE_DIRS})
+target_include_directories(${TARGET_NAME} PRIVATE ${OPENSSL_INCLUDE_DIR} ${Boost_INCLUDE_DIR} ${OpenCV_INCLUDE_DIRS} nlohmann_json::nlohmann_json)
 
 if (CURL_FOUND)
     target_include_directories(${TARGET_NAME} PRIVATE ${CURL_INCLUDE_DIRS})
 endif()
 
 target_include_directories(${TARGET_NAME} PUBLIC    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/src/bot
+                                                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/src/config
                                                     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/src/detection
 
 )

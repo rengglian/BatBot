@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16.2)
+cmake_minimum_required(VERSION 3.15.1)
 set(TARGET_NAME batbot)
 set(TARGET_VERSION 0.1)
 project(${TARGET_NAME} VERSION ${TARGET_VERSION})

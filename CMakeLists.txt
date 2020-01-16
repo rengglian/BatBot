@@ -31,4 +31,4 @@ target_include_directories(${TARGET_NAME} PUBLIC    $<BUILD_INTERFACE:${CMAKE_CU
 )
 
 
-target_link_libraries(${TARGET_NAME} /usr/local/lib/libTgBot.a ${CMAKE_THREAD_LIBS_INIT} ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES} ${OpenCV_LIBS})
+target_link_libraries(${TARGET_NAME} libTgBot.so ${CMAKE_THREAD_LIBS_INIT} ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES} ${OpenCV_LIBS} ${TgBot_LIBS})

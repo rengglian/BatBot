@@ -5,21 +5,21 @@
 
 int main(int argc, char* argv[]) {
 	
+	//Config config;
+	std::shared_ptr<Config> config_ = std::make_shared<Config>(argv[1]);
+	std::shared_ptr<ObjectDetection> yolo_ = std::make_shared<ObjectDetection>(config_);
+	std::shared_ptr<Bot> bot_ = std::make_shared<Bot>(config_, yolo_);
 
-	Config config;
-	config.Read("./config/config.json");
-
-	//Create Bot instance
-	Bot bot(config.GetToken());
+            
 
 	//Set up telegram Bot
-	bot.SetUpCommands();
+	bot_->SetUpCommands();
 
     //Set up telegram Bot
-	bot.SetUpMessages();
+	bot_->SetUpMessages();
 	
 	//Loop
-	bot.Listen();
+	bot_->Listen();
 
 	return 0;
 }

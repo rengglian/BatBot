@@ -1,7 +1,7 @@
 #include "bot.hpp"
 
-Bot::Bot(std::string token) {
-    
+Bot::Bot(std::shared_ptr<Config> config, std::shared_ptr<ObjectDetection> yolo) : config_(config), yolo_(yolo) {
+    std::string token = config_->GetToken();
 	bot = new TgBot::Bot(token);
 }
 
@@ -50,19 +50,21 @@ void Bot::SetUpMessages() {
             return;
         }
         if (!message->photo.empty()){
+            auto startTime = std::chrono::steady_clock::now();
             auto photo = message->photo.back();
             TgBot::File::Ptr pfile = bot->getApi().getFile(photo->fileId);
             std::string imgStr = bot->getApi().downloadFile(pfile->filePath);
             std::vector<uint8_t> vec(imgStr.begin(), imgStr.end());
         
-            ObjectDetection yolo;
-            auto result = yolo.detection(vec);
-
+            auto result = yolo_->detection(vec);
+            auto endTime = std::chrono::steady_clock::now();
+            std::chrono::duration<double> diff = endTime-startTime;
             std::string caption = "Image contains:\n";
 
             for (auto &e: result) {
 		        caption += e.first + " " + std::to_string(e.second) + "\n";
 	        }
+            caption += "Processing time: " + std::to_string(diff.count()) + " seconds\n";
 
             auto image(std::make_shared<TgBot::InputFile>());
             std::string tmp(vec.begin(), vec.end()); 

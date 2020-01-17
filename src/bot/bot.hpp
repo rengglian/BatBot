@@ -2,7 +2,6 @@
 
 #include <time.h>
 #include <tgbot/tgbot.h>
-
 #include "../config/config.hpp"
 #include "../detection/detection.hpp"
 
@@ -10,7 +9,7 @@ class Bot {
 
 	public:
 
-		Bot(std::string token);
+		Bot(std::shared_ptr<Config> config, std::shared_ptr<ObjectDetection> yolo);
 		~Bot();
 		
 		void Listen();
@@ -25,4 +24,7 @@ class Bot {
 
 		//Telegram methods
 		std::string GetUsername(TgBot::User::Ptr user);
+
+		const std::shared_ptr<Config> config_;
+		const std::shared_ptr<ObjectDetection> yolo_;
 };

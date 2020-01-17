@@ -3,8 +3,32 @@
 using namespace cv;
 using namespace dnn;
 
-ObjectDetection::ObjectDetection() {
-    
+ObjectDetection::ObjectDetection(std::shared_ptr<Config> config) : config_(config) {
+    std::vector<std::string> configFiles = config_->GetYolo();
+    std::string modelFile = configFiles[0];
+    std::string configFile = configFiles[1];
+    std::string classesFile = configFiles[2];
+
+    loadNet(modelFile, configFile);
+    loadClasses(classesFile);
+}
+
+void ObjectDetection::loadClasses(std::string classesFile){
+    std::ifstream ifs(classesFile.c_str());
+    if (!ifs.is_open())
+        CV_Error(Error::StsError, "File " + classesFile + " not found");
+    std::string line;
+    while (std::getline(ifs, line))
+    {
+        classes.push_back(line);
+    }
+}
+
+void ObjectDetection::loadNet(std::string modelFile, std::string configFile){
+    // Load a model.
+    net_ = readNet(modelFile, configFile, ""); 
+    net_.setPreferableBackend(0);
+    net_.setPreferableTarget(0);  
 }
 
 ObjectDetection::~ObjectDetection() {
@@ -18,24 +42,8 @@ std::unordered_map<std::string,int> ObjectDetection::detection(std::vector<uint8
     bool swapRB = true;
     int inpWidth = 416;
     int inpHeight = 416;
-    std::string modelPath = "/home/rengglian/cpp/tgbot-cpp/samples/echobot/models/yolo-object-detection/yolo-coco/yolov3.weights";
-    std::string configPath = "/home/rengglian/cpp/tgbot-cpp/samples/echobot/models/yolo-object-detection/yolo-coco/yolov3.cfg";
-    std::string file = "/home/rengglian/cpp/tgbot-cpp/samples/echobot/models/yolo-object-detection/yolo-coco/coco.names";
 
-    std::ifstream ifs(file.c_str());
-    if (!ifs.is_open())
-        CV_Error(Error::StsError, "File " + file + " not found");
-    std::string line;
-    while (std::getline(ifs, line))
-    {
-        classes.push_back(line);
-    }
-
-    // Load a model.
-    Net net = readNet(modelPath, configPath, "");
-    net.setPreferableBackend(0);
-    net.setPreferableTarget(0);
-    std::vector<String> outNames = net.getUnconnectedOutLayersNames();
+    std::vector<String> outNames = net_.getUnconnectedOutLayersNames();
 
     // Process frames.
     Mat blob;
@@ -46,12 +54,12 @@ std::unordered_map<std::string,int> ObjectDetection::detection(std::vector<uint8
 
     if (!frame.empty()) {
         
-        preprocess(frame, net, Size(inpWidth, inpHeight), scale, mean, swapRB);
+        preprocess(frame, net_, Size(inpWidth, inpHeight), scale, mean, swapRB);
 
         std::vector<Mat> outs;
-        net.forward(outs, outNames);
+        net_.forward(outs, outNames);
 
-        auto objects = postprocess(frame, outs, net);
+        auto objects = postprocess(frame, outs, net_);
 
         results = updateFrame(frame, objects);
 
